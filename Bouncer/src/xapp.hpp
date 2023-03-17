@@ -73,8 +73,8 @@ public:
   }
 
   //getters/setters.
-  void set_rnib_gnblist(void);
-  std::vector<std::string> get_rnib_gnblist(){ return rnib_gnblist; }
+  void set_rnib_nblist(void);
+  std::vector<std::string> get_rnib_nblist(){ return rnib_nblist; }
 
 private:
   void startup_subscribe_kpm_requests(void);
@@ -98,7 +98,7 @@ private:
 
   std::mutex *xapp_mutex;
   std::vector<std::thread> xapp_rcv_thread;
-  std::vector<std::string> rnib_gnblist;
+  std::vector<std::string> rnib_nblist;
   std::vector<XappMsgHandler> _callbacks;
   std::unordered_map<std::string, std::string> subscription_map;
 };

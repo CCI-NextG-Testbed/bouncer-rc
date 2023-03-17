@@ -69,7 +69,7 @@ void Xapp::stop(void){
 void Xapp::startup(SubscriptionHandler &sub_ref) {
 
 	subhandler_ref = &sub_ref;
-	set_rnib_gnblist();
+	set_rnib_nblist();
 
 	startup_registration_request(); // throws std::exception
 
@@ -177,35 +177,35 @@ inline void Xapp::subscribe_delete_request(string meid) {
 void Xapp::shutdown_subscribe_deletes(void )
 {
 	std::string xapp_id = config_ref->operator [](XappSettings::SettingName::XAPP_ID);
-	std::string gnb_id = config_ref->operator[](XappSettings::SettingName::G_NODE_B);
+	std::string nodeb_id = config_ref->operator[](XappSettings::SettingName::G_NODE_B);
 
 	mdclog_write(MDCLOG_INFO,"Preparing to send subscription Delete in file=%s, line=%d",__FILE__,__LINE__);
 
-	auto gnblist = get_rnib_gnblist();
+	auto enblist = get_rnib_nblist();
 
-	size_t sz = gnblist.size();
-	mdclog_write(MDCLOG_INFO,"GNBList size : %lu", sz);
+	size_t sz = enblist.size();
+	mdclog_write(MDCLOG_INFO,"NodeBList size : %lu", sz);
 
 	if(sz > 0) {
-		string gnb_id = config_ref->operator[](XappSettings::SettingName::G_NODE_B);
+		string nodeb_id = config_ref->operator[](XappSettings::SettingName::G_NODE_B);
 
-		if (gnb_id.empty()) {	// we iterate over all gNodeBs if not specified
+		if (nodeb_id.empty()) {	// we iterate over all NodeBs if not specified
 			for(size_t i = 0; i<sz; i++)
 			{
 				sleep(5);
 				mdclog_write(MDCLOG_INFO,"sending subscription delete request %lu out of %lu", i+1, sz);
-				mdclog_write(MDCLOG_INFO,"sending subscription delete to meid = %s", gnblist[i].c_str());
+				mdclog_write(MDCLOG_INFO,"sending subscription delete to meid = %s", enblist[i].c_str());
 
-				subscribe_delete_request(gnblist[i]);
+				subscribe_delete_request(enblist[i]);
 			}
 
 		} else {
 			sleep(5);
-			subscribe_delete_request(gnb_id);
+			subscribe_delete_request(nodeb_id);
 		}
 
 	} else {
-		mdclog_write(MDCLOG_INFO,"Subscriptions Delete cannot be sent as GNBList in RNIB is NULL");
+		mdclog_write(MDCLOG_INFO,"Subscriptions Delete cannot be sent as NodeBList in RNIB is NULL");
 	}
 
 		/*
@@ -265,17 +265,17 @@ void Xapp::shutdown_subscribe_deletes(void )
 void Xapp::startup_subscribe_kpm_requests(void ){
 	mdclog_write(MDCLOG_INFO,"Preparing to send subscription in file=%s, line=%d",__FILE__,__LINE__);
 
-	auto gnblist = get_rnib_gnblist();
+	auto enblist = get_rnib_nblist();
 
-	size_t sz = gnblist.size();
-	mdclog_write(MDCLOG_INFO,"GNBList size : %lu", sz);
+	size_t sz = enblist.size();
+	mdclog_write(MDCLOG_INFO,"NodeBList size : %lu", sz);
 	if(sz <= 0)
-		mdclog_write(MDCLOG_INFO,"Subscriptions cannot be sent as GNBList in RNIB is NULL");
+		mdclog_write(MDCLOG_INFO,"Subscriptions cannot be sent as NBList in RNIB is NULL");
 
 	for(size_t i = 0; i<sz; i++)
 	{
 		sleep(5);
-		auto meid = gnblist[i];
+		auto meid = enblist[i];
 
 		mdclog_write(MDCLOG_INFO,"sending subscription request %lu out of %lu", i+1, sz);
 		mdclog_write(MDCLOG_INFO,"sending subscription to meid = %s", meid.c_str());
@@ -437,7 +437,7 @@ inline void Xapp::subscribe_request(string meid) {
 				{"SubscriptionId",""},
 				{"ClientEndpoint",{{"Host",http_addr},{"HTTPPort",http_port},{"RMRPort",rmr_port}}},
 				{"Meid",meid},
-				{"RANFunctionID",1},
+				{"RANFunctionID",2},
 				{"SubscriptionDetails",
 					{
 						{
@@ -509,38 +509,38 @@ inline void Xapp::subscribe_request(string meid) {
 	catch (const std::exception &e)
 	{
 		mdclog_write(MDCLOG_ERR, "xapp subscription exception: %s\n", e.what());
-		throw;
+		// throw;
 	}
 }
 
 void Xapp::startup_subscribe_rc_requests(){
 	mdclog_write(MDCLOG_INFO, "Preparing to send subscription in file=%s, line=%d", __FILE__, __LINE__);
 
-	auto gnblist = get_rnib_gnblist();
+	auto enblist = get_rnib_nblist();
 
-	size_t sz = gnblist.size();
-	mdclog_write(MDCLOG_INFO, "GNBList size : %lu", sz);
+	size_t sz = enblist.size();
+	mdclog_write(MDCLOG_INFO, "NodeBList size : %lu", sz);
 
 	if (sz > 0) {
-		string gnb_id = config_ref->operator[](XappSettings::SettingName::G_NODE_B);
+		string nodeb_id = config_ref->operator[](XappSettings::SettingName::G_NODE_B);
 
-		if (gnb_id.empty()) {	// we iterate over all gNodeBs if not specified
+		if (nodeb_id.empty()) {	// we iterate over all eNodeBs if not specified
 			for (size_t i = 0; i < sz; i++)
 			{
 				sleep(5);
 				mdclog_write(MDCLOG_INFO, "sending subscription request %lu out of %lu", i + 1, sz);
 
 				// mdclog_write(MDCLOG_INFO,"GNBList,gnblist[i] = %s and ith val = %d", gnblist[i], i);
-				subscribe_request(gnblist[i]);
+				subscribe_request(enblist[i]);
 			}
 
 		} else {
 			sleep(5);	// FIXME wait for registration to complete
-			subscribe_request(gnb_id); // FIXME this should be called only after the xApp has been registered
+			subscribe_request(nodeb_id); // FIXME this should be called only after the xApp has been registered
 		}
 
 	} else {
-		throw std::runtime_error("Subscriptions cannot be sent as GNBList in RNIB is NULL");
+		throw std::runtime_error("Subscriptions cannot be sent as NodeBList in RNIB is NULL");
 	}
 
 	// std::cout << "\nSubscription map size = " << subscription_map.size() << "\n\n";
@@ -562,17 +562,17 @@ void Xapp::startup_get_policies(void){
 
 }
 
-void Xapp::set_rnib_gnblist(void) {
+void Xapp::set_rnib_nblist(void) {
 
 	   openSdl();
 
-	   void *result = getListGnbIds();
+	   void *result = getListEnbIds();
 	   if(strlen((char*)result) < 1){
-		    mdclog_write(MDCLOG_ERR, "ERROR: no data from getListGnbIds\n");
+		    mdclog_write(MDCLOG_ERR, "ERROR: no data from getListEnbIds\n");
 	        return;
 	    }
 
-	    mdclog_write(MDCLOG_INFO, "GNB List in R-NIB %s\n", (char*)result);
+	    mdclog_write(MDCLOG_INFO, "ENB List in R-NIB %s\n", (char*)result);
 
 
 	    Document doc;
@@ -582,35 +582,35 @@ void Xapp::set_rnib_gnblist(void) {
 	    	return;
 	    }
 
-	    if(!doc.HasMember("gnb_list")){
-	        mdclog_write(MDCLOG_ERR, "JSON Has No GNB List Object");
+	    if(!doc.HasMember("enb_list")){
+	        mdclog_write(MDCLOG_ERR, "JSON Has No ENB List Object");
 	    	return;
 	    }
-	    assert(doc.HasMember("gnb_list"));
+	    assert(doc.HasMember("enb_list"));
 
-	    const Value& gnblist = doc["gnb_list"];
-	    if (gnblist.IsNull())
+	    const Value& enblist = doc["enb_list"];
+	    if (enblist.IsNull())
 	      return;
 
-	    if(!gnblist.IsArray()){
-	        mdclog_write(MDCLOG_ERR, "GNB List is not an array");
+	    if(!enblist.IsArray()){
+	        mdclog_write(MDCLOG_ERR, "ENB List is not an array");
 	    	return;
 	    }
 
 
-	   	assert(gnblist.IsArray());
-	    for (SizeType i = 0; i < gnblist.Size(); i++) // Uses SizeType instead of size_t
+	   	assert(enblist.IsArray());
+	    for (SizeType i = 0; i < enblist.Size(); i++) // Uses SizeType instead of size_t
 	    {
-	    	assert(gnblist[i].IsObject());
-	    	const Value& gnbobj = gnblist[i];
+	    	assert(enblist[i].IsObject());
+	    	const Value& gnbobj = enblist[i];
 	    	assert(gnbobj.HasMember("inventory_name"));
 	    	assert(gnbobj["inventory_name"].IsString());
 	    	std::string name = gnbobj["inventory_name"].GetString();
-	    	rnib_gnblist.push_back(name);
+	    	rnib_nblist.push_back(name);
 
 	    }
 	    closeSdl();
-	    return;
+		return;
 
 }
 
