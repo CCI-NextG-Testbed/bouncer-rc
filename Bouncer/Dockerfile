@@ -62,9 +62,8 @@ RUN wget -nv --content-disposition https://packagecloud.io/o-ran-sc/release/pack
     dpkg -i rmr_${RMR_VER}_amd64.deb rmr-dev_${RMR_VER}_amd64.deb
 
 #Install RNIB libraries
-ARG RNIB_VER=1.2.5
-RUN wget -nv --content-disposition https://packagecloud.io/o-ran-sc/release/packages/debian/stretch/rnib_${RNIB_VER}_all.deb/download.deb && \
-    dpkg -i rnib_${RNIB_VER}_all.deb
+RUN wget https://filebox.ece.vt.edu/~vikaskrishnan/rnib_1.2.7_all.deb && \
+    dpkg -i rnib_1.2.7_all.deb
 
 RUN git clone https://github.com/azadkuh/nlohmann_json_release.git && \
     mkdir /usr/local/include/nlohmann && \
