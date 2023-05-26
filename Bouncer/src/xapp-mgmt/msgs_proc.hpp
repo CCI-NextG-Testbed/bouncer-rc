@@ -23,6 +23,9 @@
 #define XAPP_MSG_XAPP_MSG_HPP_
 
 #include <iostream>
+#include <chrono>
+#include <unordered_map>
+#include <string>
 #include <rmr/rmr.h>
 #include <rmr/RIC_message_types.h>
 #include <mdclog/mdclog.h>
@@ -42,6 +45,8 @@
 #include "subs_mgmt.hpp"
 #include "e2sm_control.hpp"
 
+#include "InfluxDBFactory.h"
+
 #define MAX_RMR_RECV_SIZE 2<<15
 
 class XappMsgHandler{
@@ -49,6 +54,15 @@ class XappMsgHandler{
 private:
 	std::string xapp_id;
 	SubscriptionHandler *_ref_sub_handler;
+	std::shared_ptr<influxdb::InfluxDB> influxdb;
+	typedef struct control_stats{	
+		int control_req_counter;
+		int control_ack_counter;
+		int control_failure_counter;
+		std::chrono::time_point<std::chrono::steady_clock> e2ap_start_time;
+		std::chrono::time_point<std::chrono::steady_clock> e2ap_stop_time;
+	}control_stats_t;
+	std::unordered_map<std::string,control_stats_t> meid_map;
 public:
 	//constructor for xapp_id.
 	 XappMsgHandler(std::string xid){xapp_id=xid; _ref_sub_handler=NULL;};
@@ -64,6 +78,7 @@ public:
 	 //bool a1_policy_handler(char *, int* , a1_policy_helper &);
 
 	 void testfunction() {std::cout << "<<<<<<<<<<<<<<<<<<IN TEST FUNCTION<<<<<<<<<<<<<<<" << std::endl;}
+	 bool calculate_e2_latency(std::string&, control_stats_t);
 };
 
 

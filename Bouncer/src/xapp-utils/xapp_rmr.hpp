@@ -171,16 +171,17 @@ void XappRmr::xapp_rmr_receive(MsgHandler&& msgproc, XappRmr *parent){
 		{
 			mdclog_write(MDCLOG_INFO,"RMR Received Message of Type: %d",mbuf->mtype);
 			mdclog_write(MDCLOG_DEBUG,"RMR Received Message: %s",(char*)mbuf->payload);
+			num++;
+			mdclog_write(MDCLOG_DEBUG, "Total Indications received : %d", num);
 
 		    //in case message handler returns true, need to resend the message.
 			msgproc(mbuf, resend);
 
 			//start of code to check decoding indication payload
 
-			num++;
-			mdclog_write(MDCLOG_DEBUG, "Total Indications received : %d", num);
 
 			if(*resend){
+				rmr_rts_msg(rmr_context, mbuf );
 				mdclog_write(MDCLOG_INFO,"RMR Return to Sender Message of Type: %d",mbuf->mtype);
 				mdclog_write(MDCLOG_DEBUG,"RMR Return to Sender Message: %s",(char*)mbuf->payload);
 
@@ -194,7 +195,6 @@ void XappRmr::xapp_rmr_receive(MsgHandler&& msgproc, XappRmr *parent){
 					}
 				}
 
-				rmr_rts_msg(rmr_context, mbuf );
 				//sleep(1);
 
 				*resend = false;

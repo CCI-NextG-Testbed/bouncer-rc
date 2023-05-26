@@ -21,7 +21,7 @@ RNIB_LIBS:= -pthread /usr/local/include/rnib/rnibreader.a
 ######## Keep include dirs separate so we have transparency
 
 
-BASEFLAGS=  -Wall -std=c++14 $(CLOGFLAGS) -g
+BASEFLAGS=  -Wall -std=c++17 $(CLOGFLAGS) -g
 # C_BASEFLAGS= -Wall $(CLOGFLAGS) -DASN_DISABLE_OER_SUPPORT # FIXME Huff
 # C_BASEFLAGS= -Wall $(CLOGFLAGS) -DASN_EMIT_DEBUG=1	# Huff Debug
 C_BASEFLAGS= -Wall $(CLOGFLAGS)
@@ -39,7 +39,7 @@ E2SMFLAGS = -I$(E2SMSRC)
 
 ########libs
 
-LIBS= -lsdl -lrmr_si -lpthread -lm -lboost_system -lcrypto -lssl -lcpprest $(LOG_LIBS) $(CURL_LIBS) $(RNIB_LIBS)
+LIBS= -lsdl -lrmr_si -lpthread -lm -lboost_system -lcrypto -lssl -lcpprest -lInfluxDB $(LOG_LIBS) $(CURL_LIBS) $(RNIB_LIBS)
 COV_FLAGS= -fprofile-arcs -ftest-coverage
 
 #######

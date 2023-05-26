@@ -297,7 +297,7 @@ void XappMsgHandler::operator()(rmr_mbuf_t *message, bool *resend)
 			helper.call_process_id = ind_helper.call_process_id.buf;
 			helper.call_process_id_size = ind_helper.call_process_id.size;
 			// Control ACK
-			helper.control_ack = RICcontrolAckRequest_noAck; // for now we do not require ACK messages for control requests
+			helper.control_ack = RICcontrolAckRequest_ack;
 			// Control Header
 			helper.control_header = ctrl_header_buf;
 			helper.control_header_size = ctrl_header_buf_size;
@@ -343,6 +343,108 @@ void XappMsgHandler::operator()(rmr_mbuf_t *message, bool *resend)
 				fprintf(stderr, "end of RIC_INDICATION case\n\n");
 			// num++;
 			// mdclog_write(MDCLOG_INFO, "Number of Indications Received = %d", num);
+			unsigned char *me_id;
+			if ((me_id = (unsigned char *)malloc(sizeof(unsigned char) * RMR_MAX_MEID)) == NULL)
+			{
+				mdclog_write(MDCLOG_ERR, "Error :  %s, %d : malloc failed for me_id", __FILE__, __LINE__);
+				me_id = rmr_get_meid(message, NULL);
+			}
+			else
+			{
+				rmr_get_meid(message, me_id);
+			}
+			if (me_id == NULL)
+			{
+				mdclog_write(MDCLOG_ERR, " Error :: %s, %d : rmr_get_meid failed me_id is NULL", __FILE__, __LINE__);
+				break;
+			}
+			std::string meid((char*)me_id);
+			mdclog_write(MDCLOG_INFO, "RMR Received MEID: %s", me_id);
+			if(meid_map.count(meid)==0) {
+				control_stats_t stats {};
+				meid_map[meid] = stats;
+			}
+
+			// ++meid_map[meid].control_req_counter;
+			// if(control_req_counter == 1)
+			// 	control_ack_counter = control_failure_counter = 0;
+			if(!influxdb) {
+				influxdb = influxdb::InfluxDBFactory::Get("http://10.15.0.42:8086?db=nexran");
+			}
+			if(influxdb)
+				influxdb->write(influxdb::Point{meid}
+				.addField("CONTROL_REQ", ++meid_map[meid].control_req_counter));
+			meid_map[meid].e2ap_start_time = std::chrono::steady_clock::now();
+			break;
+		}
+
+		case (RIC_CONTROL_ACK):
+		{
+			unsigned char *me_id;
+			if ((me_id = (unsigned char *)malloc(sizeof(unsigned char) * RMR_MAX_MEID)) == NULL)
+			{
+				mdclog_write(MDCLOG_ERR, "Error :  %s, %d : malloc failed for me_id", __FILE__, __LINE__);
+				me_id = rmr_get_meid(message, NULL);
+			}
+			else
+			{
+				rmr_get_meid(message, me_id);
+			}
+			if (me_id == NULL)
+			{
+				mdclog_write(MDCLOG_ERR, " Error :: %s, %d : rmr_get_meid failed me_id is NULL", __FILE__, __LINE__);
+				break;
+			}
+			std::string meid((char*)me_id);
+			mdclog_write(MDCLOG_INFO, "RMR Received MEID: %s", me_id);
+			if(meid_map.count(meid)==0) {
+				control_stats_t stats {};
+				meid_map[meid] = stats;
+			}
+			meid_map[meid].e2ap_stop_time = std::chrono::steady_clock::now();
+			calculate_e2_latency(meid, meid_map[meid]);
+			// ++control_ack_counter;
+			if(influxdb) {
+				influxdb->write(influxdb::Point{"SAC"}
+				.addField("CONTROL_ACK", ++meid_map[meid].control_ack_counter));
+			}
+			mdclog_write(MDCLOG_INFO, "Received RIC_CONTROL_ACK from E2 Node!");
+			mdclog_write(MDCLOG_DEBUG, "Decoding control ack for msg = %d", message->mtype);
+			break;
+		}
+
+		case (RIC_CONTROL_FAILURE):
+		{
+			unsigned char *me_id;
+			if ((me_id = (unsigned char *)malloc(sizeof(unsigned char) * RMR_MAX_MEID)) == NULL)
+			{
+				mdclog_write(MDCLOG_ERR, "Error :  %s, %d : malloc failed for me_id", __FILE__, __LINE__);
+				me_id = rmr_get_meid(message, NULL);
+			}
+			else
+			{
+				rmr_get_meid(message, me_id);
+			}
+			if (me_id == NULL)
+			{
+				mdclog_write(MDCLOG_ERR, " Error :: %s, %d : rmr_get_meid failed me_id is NULL", __FILE__, __LINE__);
+				break;
+			}
+			std::string meid((char*)me_id);
+			mdclog_write(MDCLOG_INFO, "RMR Received MEID: %s", me_id);
+			if(meid_map.count(meid)==0) {
+				control_stats_t stats {};
+				meid_map[meid] = stats;
+			}
+			meid_map[meid].e2ap_stop_time = std::chrono::steady_clock::now();
+			// ++control_failure_counter;
+			calculate_e2_latency(meid, meid_map[meid]);
+			if(influxdb) {
+				influxdb->write(influxdb::Point{"SAC"}
+				.addField("CONTROL_FAILURE", ++meid_map[meid].control_failure_counter));
+			}
+			mdclog_write(MDCLOG_INFO, "Received RIC_CONTROL_FAILURE from E2 Node!!!");
+			mdclog_write(MDCLOG_DEBUG, "Decoding control failure for msg = %d", message->mtype);
 			break;
 		}
 
@@ -368,5 +470,26 @@ void XappMsgHandler::operator()(rmr_mbuf_t *message, bool *resend)
 	return;
 
 };
+
+bool XappMsgHandler::calculate_e2_latency(std::string& meid, control_stats_t stats) {
+	if (stats.e2ap_stop_time > stats.e2ap_start_time) {
+		auto rtt_latency = std::chrono::duration_cast<std::chrono::microseconds>(stats.e2ap_stop_time - stats.e2ap_start_time).count();
+		mdclog_write(MDCLOG_DEBUG, "Application loop latency is %ld", rtt_latency);
+		if(influxdb) {
+			influxdb->write(influxdb::Point{"bouncer_rtt"}
+			.addField(meid, (long long int)rtt_latency));
+		} else {
+			influxdb = influxdb::InfluxDBFactory::Get("http://10.15.0.42:8086?db=nexran");
+			calculate_e2_latency(meid, stats);
+		}
+		stats.e2ap_start_time = std::chrono::time_point<std::chrono::steady_clock>{};
+		stats.e2ap_stop_time = std::chrono::time_point<std::chrono::steady_clock>{};
+		return true;
+	} else {
+		mdclog_write(MDCLOG_ERR, "[ERROR]: Invalid latency measurements");
+		return false;
+	}
+
+}
 
 

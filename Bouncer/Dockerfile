@@ -94,6 +94,14 @@ RUN git clone https://github.com/Tencent/rapidjson && \
     cd ${STAGE_DIR} && \
     rm -rf rapidjson
 
+# Install InfluxDB
+RUN cd /tmp \
+  && git clone https://github.com/offa/influxdb-cxx \
+  && cd influxdb-cxx \
+  && git checkout 6b76bd02f26166e03888214914e5f9a000feb7d8 \
+  && mkdir -p build && cd build \
+  && cmake ../ && make install && ldconfig \
+  && cd .. && rm -rf /tmp/influxdb-cxx
 
 ##-----------------------------------
 # Now install the program
@@ -129,6 +137,38 @@ RUN dpkg -i /tmp/*.deb && \
 
 COPY --from=ricbuild /etc/xapp/* /etc/xapp/
 COPY --from=ricbuild /usr/local/bin/b_xapp_main /usr/local/bin/b_xapp_main
+COPY --from=ricbuild /usr/local/lib/libInfluxDB.so /usr/local/lib/libInfluxDB.so
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libcurl.so.4 /lib/x86_64-linux-gnu/libcurl.so.4
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libnghttp2.so.14 /lib/x86_64-linux-gnu/libnghttp2.so.14
+COPY --from=ricbuild /lib/x86_64-linux-gnu/librtmp.so.1 /lib/x86_64-linux-gnu/librtmp.so.1
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libssl.so.1.1 /lib/x86_64-linux-gnu/libssl.so.1.1
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libssh.so.4 /lib/x86_64-linux-gnu/libssh.so.4
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libasn1.so.8 /lib/x86_64-linux-gnu/libasn1.so.8
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libssl.so.1.1 /lib/x86_64-linux-gnu/libssl.so.1.1
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libasn1.so.8 /lib/x86_64-linux-gnu/libasn1.so.8
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libcom_err.so.2 /lib/x86_64-linux-gnu/libcom_err.so.2
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libcrypt.so.1 /lib/x86_64-linux-gnu/libcrypt.so.1
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libgssapi.so.3 /lib/x86_64-linux-gnu/libgssapi.so.3
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libgssapi_krb5.so.2 /lib/x86_64-linux-gnu/libgssapi_krb5.so.2
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libhcrypto.so.4 /lib/x86_64-linux-gnu/libhcrypto.so.4
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libheimbase.so.1 /lib/x86_64-linux-gnu/libheimbase.so.1
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libheimntlm.so.0 /lib/x86_64-linux-gnu/libheimntlm.so.0
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libhx509.so.5 /lib/x86_64-linux-gnu/libhx509.so.5
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libk5crypto.so.3 /lib/x86_64-linux-gnu/libk5crypto.so.3
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libkeyutils.so.1 /lib/x86_64-linux-gnu/libkeyutils.so.1
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libkrb5.so.26 /lib/x86_64-linux-gnu/libkrb5.so.26
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libkrb5.so.3 /lib/x86_64-linux-gnu/libkrb5.so.3
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libkrb5support.so.0 /lib/x86_64-linux-gnu/libkrb5support.so.0
+COPY --from=ricbuild /lib/x86_64-linux-gnu/liblber-2.4.so.2 /lib/x86_64-linux-gnu/liblber-2.4.so.2
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libldap_r-2.4.so.2 /lib/x86_64-linux-gnu/libldap_r-2.4.so.2
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libpsl.so.5 /lib/x86_64-linux-gnu/libpsl.so.5
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libresolv.so.2 /lib/x86_64-linux-gnu/libresolv.so.2
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libroken.so.18 /lib/x86_64-linux-gnu/libroken.so.18
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libsasl2.so.2 /lib/x86_64-linux-gnu/libsasl2.so.2
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libsqlite3.so.0 /lib/x86_64-linux-gnu/libsqlite3.so.0
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libtasn1.so.6 /lib/x86_64-linux-gnu/libtasn1.so.6
+COPY --from=ricbuild /lib/x86_64-linux-gnu/libwind.so.0 /lib/x86_64-linux-gnu/libwind.so.0
+
 
 ##ENV  PYTHONHOME=/opt/python3 \
 ##     PYTHONPATH=/opt/python3 \
@@ -141,4 +181,4 @@ ENV RMR_RTG_SVC="9999" \
 
 # CMD python3 /etc/xapp/init_script.py $CONFIG_FILE
 # CMD ["sleep", "360000"]
-CMD ["b_xapp_main"]
+ENTRYPOINT [ "b_xapp_main"]
